@@ -1,0 +1,42 @@
+# ─── Environment / Secrets ───────────────────────────────────────────
+.env
+.env.local
+.env.*.local
+
+# ─── Python ──────────────────────────────────────────────────────────
+.venv/
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+dist/
+build/
+
+# ─── ML Models (stored in S3, not in git) ───────────────────────────
+models/
+*.keras
+*.h5
+*.pkl
+
+# ─── Streamlit ───────────────────────────────────────────────────────
+.streamlit/
+
+# ─── Node / Next.js (backup — frontend/.gitignore handles these too)─
+frontend/node_modules/
+frontend/.next/
+frontend/out/
+
+# ─── OS ──────────────────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ─── IDE ─────────────────────────────────────────────────────────────
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# ─── Misc ────────────────────────────────────────────────────────────
+*.pem
+*.log

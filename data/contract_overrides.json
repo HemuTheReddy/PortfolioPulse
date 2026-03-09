@@ -1,0 +1,8 @@
+{
+  "_comment": "Manual display overrides for proxy/special contracts that APIs label as Unknown. fix_coin_manifest.py skips these.",
+  "0x0000000000a39bb272e79075ade125fd351887ac": {
+    "symbol": "blur-eth",
+    "name": "Blur Bidding Pool (ETH)",
+    "logo_url": "https://assets.coingecko.com/coins/images/28453/small/blur.png"
+  }
+}
