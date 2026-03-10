@@ -593,13 +593,153 @@ Amplify detects the push, rebuilds, and deploys automatically (~3–5 min).
 
 ### Phase 6: Monitoring (CloudWatch)
 
-| # | Task | Details |
-|---|------|---------|
-| 6.1 | Lambda logs | Automatic — every invocation logs to CloudWatch Logs |
-| 6.2 | SageMaker endpoint metrics | Monitor `Invocations`, `ModelLatency`, `OverheadLatency` |
-| 6.3 | API Gateway metrics | Monitor `Count`, `Latency`, `4XXError`, `5XXError` |
-| 6.4 | (Optional) Create dashboard | Single CloudWatch dashboard combining all three |
-| 6.5 | (Optional) Set alarms | Alert if error rate > 5% or latency > 10s |
+No code changes needed. Everything here is AWS Console only.
+
+| # | Task | Details | Status |
+|---|------|---------|--------|
+| 6.1 | Verify Lambda logs | Automatic — check logs exist after a test invocation | **AWS — manual** |
+| 6.2 | Enable API Gateway metrics | Not on by default — must enable per stage | **AWS — manual** |
+| 6.3 | Enable SageMaker endpoint metrics | Automatic once endpoint is active | **AWS — verify** |
+| 6.4 | Create CloudWatch dashboard | Single view combining Lambda + API Gateway + SageMaker | **AWS — manual** |
+| 6.5 | Create alarms | Alert on Lambda errors and API Gateway 5XX spikes | **AWS — manual** |
+
+---
+
+#### Step 6.1: Verify Lambda logs
+
+Lambda automatically writes to CloudWatch Logs on every invocation. Verify it's working:
+
+1. Go to **CloudWatch Console** → **Log groups** (us-east-2)
+2. Find: `/aws/lambda/PortfolioPulse-API`
+3. Click it → click the most recent **log stream**
+4. You should see `START`, `Event: {...}`, `END`, `REPORT` entries
+5. If the log group doesn't exist yet, invoke your Lambda from the test console first
+
+**Reading the REPORT line** — this is the most useful line per invocation:
+```
+REPORT RequestId: ...  Duration: 1234.56 ms  Billed Duration: 1235 ms  Memory Size: 1024 MB  Max Memory Used: 387 MB
+```
+- **Duration**: actual execution time
+- **Max Memory Used**: tune your memory setting based on this (ideally set it to ~1.5× max usage)
+- **Init Duration**: only appears on cold starts — shows Lambda container startup time
+
+---
+
+#### Step 6.2: Enable API Gateway execution metrics
+
+API Gateway metrics are **not enabled by default**. You must turn them on per stage:
+
+1. Go to **API Gateway Console** → select `PortfolioPulse-API`
+2. Click **Stages** in the left panel → select `prod`
+3. Click the **Logs/Tracing** tab
+4. Under **CloudWatch Settings**:
+   - Check **Enable CloudWatch Logs**
+   - Log level: **INFO** (or ERROR for less noise)
+   - Check **Enable Detailed Metrics**
+5. Click **Save Changes**
+6. AWS will prompt you to set an IAM role — if so:
+   - Go to **IAM Console** → Roles → Create role
+   - Trusted entity: **API Gateway**
+   - Attach managed policy: `AmazonAPIGatewayPushToCloudWatchLogs`
+   - Name: `APIGatewayCloudWatchRole`
+   - Then go back to **API Gateway Console** → Settings (left panel) → paste the role ARN → Save
+
+After enabling, metrics will appear in CloudWatch under the namespace `AWS/ApiGateway`.
+
+---
+
+#### Step 6.3: Verify SageMaker endpoint metrics
+
+SageMaker automatically publishes metrics once the endpoint is active — nothing to enable:
+
+1. Go to **CloudWatch Console** → **Metrics** → **All metrics**
+2. Search for namespace: `AWS/SageMaker`
+3. Select **Endpoint Metrics**
+4. Find your endpoint `portfoliopulse-neumf`
+5. Key metrics to watch:
+
+| Metric | What it means |
+|--------|--------------|
+| `Invocations` | Total inference requests |
+| `ModelLatency` | Time the model spent on inference (ms) |
+| `OverheadLatency` | SageMaker routing overhead (ms) |
+| `Invocation4XXErrors` | Bad request errors |
+| `Invocation5XXErrors` | Model/container errors |
+
+---
+
+#### Step 6.4: Create a CloudWatch Dashboard
+
+A single dashboard lets you see Lambda + API Gateway + SageMaker at a glance:
+
+1. Go to **CloudWatch Console** → **Dashboards** → **Create dashboard**
+2. Name: `PortfolioPulse`
+3. Add widgets one at a time — click **Add widget**:
+
+**Widget 1 — Lambda Invocations + Errors (Line chart)**
+- Data source: CloudWatch Metrics
+- Namespace: `AWS/Lambda`
+- Metric: `Invocations` — Function name: `PortfolioPulse-API`
+- Add another metric: `Errors` — same function
+- Title: `Lambda: Invocations vs Errors`
+
+**Widget 2 — Lambda Duration (Line chart)**
+- Namespace: `AWS/Lambda`
+- Metric: `Duration` — stat: `p99` (99th percentile)
+- Title: `Lambda: p99 Duration (ms)`
+
+**Widget 3 — API Gateway Latency (Line chart)**
+- Namespace: `AWS/ApiGateway`
+- Metric: `Latency` — API name: `PortfolioPulse-API`, Stage: `prod`
+- Also add: `4XXError`, `5XXError`
+- Title: `API Gateway: Latency + Errors`
+
+**Widget 4 — SageMaker Invocations (Line chart)**
+- Namespace: `AWS/SageMaker`
+- Metric: `Invocations` — EndpointName: `portfoliopulse-neumf`
+- Also add: `ModelLatency`
+- Title: `SageMaker: Invocations + Latency`
+
+4. Click **Save dashboard**
+
+---
+
+#### Step 6.5: Create Alarms
+
+Set up two alarms to catch problems early:
+
+**Alarm 1 — Lambda error rate spike**
+
+1. CloudWatch → **Alarms** → **Create alarm**
+2. Select metric: `AWS/Lambda` → `Errors` → `PortfolioPulse-API`
+3. Statistic: **Sum**, Period: **5 minutes**
+4. Condition: Greater than **5** errors in 5 minutes
+5. Notification: Create an SNS topic → enter your email → confirm the subscription email
+6. Alarm name: `PortfolioPulse-Lambda-Errors`
+7. Click **Create alarm**
+
+**Alarm 2 — API Gateway 5XX spike**
+
+1. Create alarm → metric: `AWS/ApiGateway` → `5XXError` → API `PortfolioPulse-API`, stage `prod`
+2. Statistic: **Sum**, Period: **5 minutes**
+3. Condition: Greater than **3**
+4. Same SNS topic as above (reuse it)
+5. Alarm name: `PortfolioPulse-API-5XX`
+6. Click **Create alarm**
+
+---
+
+#### What to expect in normal operation
+
+| Metric | Normal range | Concern if... |
+|--------|-------------|----------------|
+| Lambda Duration | 500ms–3s | >10s consistently |
+| Lambda Memory Used | 300–500 MB | Approaching 1024 MB limit |
+| SageMaker ModelLatency | 100–500ms (warm) / 2–4 min (cold start) | >10s on warm requests |
+| API Gateway 4XX | Occasional (client errors) | Spike > 10% of traffic |
+| API Gateway 5XX | Should be 0 | Any sustained 5XX |
+
+**Cold start note:** The first SageMaker request after ~15 minutes of idle will take 2–4 minutes because the TensorFlow container has to spin up. This is expected for a serverless endpoint — document it in your README as a known limitation.
 
 ---
 
