@@ -1,0 +1,12 @@
+# PortfolioPulse Lambda — production dependencies
+# No TensorFlow (inference handled by SageMaker endpoint)
+# No FastAPI/uvicorn (routing handled by lambda_handler.py)
+
+boto3>=1.34.0
+pandas>=2.0.0
+numpy>=1.24.0,<2.0.0
+scipy>=1.11.0
+pyportfolioopt>=1.5.0
+requests>=2.31.0
+cachetools>=5.3.0
+python-dotenv>=1.0.0

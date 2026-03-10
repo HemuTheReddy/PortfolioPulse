@@ -1,11 +1,19 @@
 """
 inference.py — NeuMF Model inference → top-N recommendations + explanations.
+
+Supports two inference backends:
+  1. SageMaker endpoint (Lambda / production) — set SAGEMAKER_ENDPOINT env var
+  2. Local TensorFlow model (dev) — loads models/neumf_model.keras
+Falls back to deterministic demo scores if neither is available.
 """
 import os
+import json
 import logging
 import functools
 import numpy as np
 from backend.config import MODEL_PATH, NUM_ITEMS, TOP_N_INFERENCE
+
+SAGEMAKER_ENDPOINT = os.getenv("SAGEMAKER_ENDPOINT")
 
 logger = logging.getLogger(__name__)
 
@@ -93,32 +101,68 @@ def _demo_scores(user_idx: int) -> list[tuple[int, float]]:
     return [(idx, float(score)) for idx, score in indexed[:TOP_N_INFERENCE]]
 
 
+def _invoke_sagemaker(user_idx: int) -> list[tuple[int, float]] | None:
+    """
+    Call SageMaker serverless endpoint for inference.
+    Returns list of (item_idx, score) or None on failure.
+    """
+    if not SAGEMAKER_ENDPOINT:
+        return None
+
+    try:
+        import boto3
+        from backend.config import AWS_REGION
+
+        client = boto3.client("sagemaker-runtime", region_name=AWS_REGION)
+        payload = json.dumps({"user_idx": user_idx, "top_n": TOP_N_INFERENCE})
+
+        resp = client.invoke_endpoint(
+            EndpointName=SAGEMAKER_ENDPOINT,
+            ContentType="application/json",
+            Body=payload,
+        )
+
+        result = json.loads(resp["Body"].read().decode("utf-8"))
+        recs = result.get("recommendations", [])
+        return [(int(r["item_idx"]), float(r["score"])) for r in recs]
+    except Exception as e:
+        logger.warning("SageMaker invocation failed: %s", e)
+        return None
+
+
 def get_neumf_recommendations(user_idx: int) -> list[tuple[int, float]]:
     """
     Run NeuMF inference for a given user_idx.
     Returns top-N list of (item_idx, affinity_score) sorted desc.
+
+    Priority: SageMaker endpoint → local TF model → demo scores.
     """
+    # 1. Try SageMaker (production / Lambda)
+    sm_result = _invoke_sagemaker(user_idx)
+    if sm_result:
+        return sm_result
+
+    # 2. Try local TensorFlow model (dev)
     model = load_model()
+    if model is not None:
+        try:
+            user_input = np.full(NUM_ITEMS, user_idx, dtype=np.int32)
+            item_input = np.arange(NUM_ITEMS, dtype=np.int32)
 
-    if model is None:
-        return _demo_scores(user_idx)
+            predictions = model.predict(
+                [user_input, item_input],
+                batch_size=512,
+                verbose=0,
+            ).flatten()
 
-    try:
-        user_input = np.full(NUM_ITEMS, user_idx, dtype=np.int32)
-        item_input = np.arange(NUM_ITEMS, dtype=np.int32)
+            indexed = list(enumerate(predictions))
+            indexed.sort(key=lambda x: x[1], reverse=True)
+            return [(int(idx), float(score)) for idx, score in indexed[:TOP_N_INFERENCE]]
+        except Exception as e:
+            logger.warning("Local inference error: %s", e)
 
-        predictions = model.predict(
-            [user_input, item_input],
-            batch_size=512,
-            verbose=0,
-        ).flatten()
-
-        indexed = list(enumerate(predictions))
-        indexed.sort(key=lambda x: x[1], reverse=True)
-        return [(int(idx), float(score)) for idx, score in indexed[:TOP_N_INFERENCE]]
-    except Exception as e:
-        logger.warning(f"Inference error, using demo scores: {e}")
-        return _demo_scores(user_idx)
+    # 3. Deterministic demo fallback
+    return _demo_scores(user_idx)
 
 
 def generate_explanation(

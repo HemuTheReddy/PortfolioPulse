@@ -5,9 +5,11 @@ applications:
       phases:
         preBuild:
           commands:
+            - nvm use 18
             - npm ci
         build:
           commands:
+            - echo "NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL"
             - npm run build
       artifacts:
         baseDirectory: .next
@@ -16,3 +18,4 @@ applications:
       cache:
         paths:
           - node_modules/**/*
+          - .next/cache/**/*
