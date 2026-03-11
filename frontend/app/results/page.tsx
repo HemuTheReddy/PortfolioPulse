@@ -136,7 +136,7 @@ function ResultsContent() {
                 <div className="card stat-card">
                     <div className="stat-label">Market State</div>
                     <div className="stat-value" style={{ fontSize: 22 }}>
-                        {market.emoji} {market.market_state.toUpperCase()}
+                        {market.market_state.toUpperCase()}
                     </div>
                     <div className="stat-sub">Source: {market.source}</div>
                 </div>
@@ -292,7 +292,11 @@ function ResultsContent() {
                 <h2 className="results-section-title">How This Works</h2>
                 <div className="explain-grid">
                     <div className="card explain-card">
-                        <div className="icon">🧠</div>
+                        <div className="icon" aria-hidden="true">
+                            <svg viewBox="0 0 24 24">
+                                <path d="M7 10a2 2 0 1 0-1.73-3h-.02A2 2 0 0 0 7 10Zm10 0a2 2 0 1 0 1.73-3h.02A2 2 0 0 0 17 10ZM12 7a2 2 0 1 0 0-4 2 2 0 0 0 0 4Zm-5 8a2 2 0 1 0-1.73-3h-.02A2 2 0 0 0 7 15Zm10 0a2 2 0 1 0 1.73-3h.02A2 2 0 0 0 17 15Zm-5 6a2 2 0 1 0 0-4 2 2 0 0 0 0 4Zm-3.6-9.1 2-1.4m3.2 0 2 1.4m-3.6 2.2v2.8m-4.6-5.7v2.8m9.2-2.8v2.8" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" />
+                            </svg>
+                        </div>
                         <h4>NeuMF Inference</h4>
                         <p>
                             Neural Collaborative Filtering scores every token against your wallet
@@ -300,12 +304,20 @@ function ResultsContent() {
                         </p>
                     </div>
                     <div className="card explain-card">
-                        <div className="icon">📊</div>
+                        <div className="icon" aria-hidden="true">
+                            <svg viewBox="0 0 24 24">
+                                <path d="M4 20h16M7 17v-5m5 5V8m5 9v-7" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" />
+                            </svg>
+                        </div>
                         <h4>Regime Adjustment</h4>
                         <p>{recs.regime_explanation}</p>
                     </div>
                     <div className="card explain-card">
-                        <div className="icon">⚖️</div>
+                        <div className="icon" aria-hidden="true">
+                            <svg viewBox="0 0 24 24">
+                                <path d="M12 4v3m-7 4h14M8 11l-3 6h6l-3-6Zm8 0-3 6h6l-3-6ZM12 7v11m-3 2h6" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" />
+                            </svg>
+                        </div>
                         <h4>Risk Constraints</h4>
                         <p>
                             Risk score {quiz.risk_score}/5 ({quiz.risk_label}) applies max
@@ -333,13 +345,13 @@ function ResultsContent() {
 
             <div className="actions" style={{ justifyContent: "center" }}>
                 <button className="btn btn-primary" onClick={exportCSV}>
-                    📥 Export CSV
+                    Export CSV
                 </button>
                 <button className="btn btn-secondary" onClick={() => router.push("/quiz")}>
-                    🔄 Retake Quiz
+                    Retake Quiz
                 </button>
                 <button className="btn btn-secondary" onClick={() => router.push("/")}>
-                    🏠 Home
+                    Home
                 </button>
             </div>
 

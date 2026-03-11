@@ -29,8 +29,15 @@ export function ImportWalletConnect({
                     color: "#FF6B6B",
                 }}
             >
-                ⚠️ WalletConnect unavailable. Add a valid `NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID`
-                to `frontend/.env.local` and restart the frontend server.
+                <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
+                    <span className="inline-icon" aria-hidden="true">
+                        <svg viewBox="0 0 24 24">
+                            <path d="M12 3 2 21h20L12 3Zm0 6v6m0 3h.01" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+                        </svg>
+                    </span>
+                    WalletConnect unavailable. Add a valid `NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID`
+                    to `frontend/.env.local` and restart the frontend server.
+                </span>
             </div>
         );
     }

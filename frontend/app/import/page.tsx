@@ -58,7 +58,7 @@ function PortfolioPreview({
     return (
         <div className="card" style={{ padding: 20, marginTop: 24 }}>
             <h3 style={{ color: "var(--text-primary)", margin: "0 0 16px 0", fontSize: 16 }}>
-                📊 Portfolio Preview — {assets.length} asset{assets.length !== 1 ? "s" : ""}
+                Portfolio Preview — {assets.length} asset{assets.length !== 1 ? "s" : ""}
             </h3>
 
             <div style={{ maxHeight: 260, overflowY: "auto" }}>
@@ -120,8 +120,9 @@ function PortfolioPreview({
 function SourceBadge({ count, label }: { count: number; label: string }) {
     if (count === 0) return <span style={{ color: "var(--text-secondary)", fontSize: 13 }}>Not connected</span>;
     return (
-        <span style={{ color: "var(--accent)", fontSize: 13, fontWeight: 600 }}>
-            ✅ Found {count} {label}
+        <span style={{ color: "var(--accent)", fontSize: 13, fontWeight: 600, display: "inline-flex", alignItems: "center", gap: 6 }}>
+            <span aria-hidden="true" style={{ fontSize: 11 }}>●</span>
+            Found {count} {label}
         </span>
     );
 }
@@ -277,7 +278,11 @@ function ImportContent() {
                     onClick={() => toggle("wallet")}
                 >
                     <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                        <span style={{ fontSize: 24 }}>🦊</span>
+                        <span className="section-icon" aria-hidden="true">
+                            <svg viewBox="0 0 24 24">
+                                <path d="M4 7h16v10H4zM7 7V5h10v2M8 12h8" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" />
+                            </svg>
+                        </span>
                         <div>
                             <h4 style={{ color: "var(--text-primary)", margin: 0 }}>Connect Wallet</h4>
                             <SourceBadge count={walletAssets.length} label="tokens" />
@@ -308,7 +313,14 @@ function ImportContent() {
                                 background: "rgba(255,68,68,0.08)", border: "1px solid rgba(255,68,68,0.3)",
                                 borderRadius: 8, fontSize: 13, color: "#FF6B6B",
                             }}>
-                                ⚠️ {walletError}
+                                <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
+                                    <span className="inline-icon" aria-hidden="true">
+                                        <svg viewBox="0 0 24 24">
+                                            <path d="M12 3 2 21h20L12 3Zm0 6v6m0 3h.01" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+                                        </svg>
+                                    </span>
+                                    {walletError}
+                                </span>
                             </div>
                         )}
 
@@ -317,7 +329,14 @@ function ImportContent() {
                             background: "rgba(0,255,148,0.05)", border: "1px solid rgba(0,255,148,0.15)",
                             borderRadius: 8, fontSize: 12, color: "var(--text-secondary)",
                         }}>
-                            🔒 We only read your public address — no private key or seed phrase is ever requested.
+                            <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
+                                <span className="inline-icon" aria-hidden="true">
+                                    <svg viewBox="0 0 24 24">
+                                        <path d="M7 10V7a5 5 0 0 1 10 0v3m-9 0h8v10H8V10Z" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" />
+                                    </svg>
+                                </span>
+                                We only read your public address -- no private key or seed phrase is ever requested.
+                            </span>
                         </div>
                     </div>
                 )}
@@ -330,7 +349,11 @@ function ImportContent() {
                     onClick={() => toggle("csv")}
                 >
                     <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                        <span style={{ fontSize: 24 }}>📄</span>
+                        <span className="section-icon" aria-hidden="true">
+                            <svg viewBox="0 0 24 24">
+                                <path d="M7 3h7l5 5v13H7V3Zm7 0v5h5" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" />
+                            </svg>
+                        </span>
                         <div>
                             <h4 style={{ color: "var(--text-primary)", margin: 0 }}>Upload CSV</h4>
                             <SourceBadge count={csvAssets.length} label="assets" />
@@ -379,10 +402,14 @@ function ImportContent() {
                                 transition: "border-color 0.2s",
                             }}
                         >
-                            <div style={{ fontSize: 28, marginBottom: 8 }}>📁</div>
+                            <div className="dropzone-icon" aria-hidden="true">
+                                <svg viewBox="0 0 24 24">
+                                    <path d="M20 16.5a4.5 4.5 0 0 0-1.7-8.66A6 6 0 0 0 6 9.5 4 4 0 0 0 6.5 17H20Zm-8-7.5v7m0-7-3 3m3-3 3 3" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" />
+                                </svg>
+                            </div>
                             <p style={{ color: "var(--text-secondary)", fontSize: 13, margin: 0 }}>
                                 {csvAssets.length > 0
-                                    ? `✅ ${csvAssets.length} assets loaded. Drop another file to replace.`
+                                    ? `${csvAssets.length} assets loaded. Drop another file to replace.`
                                     : "Drag & drop a CSV here, or click to browse"}
                             </p>
                         </div>
@@ -393,7 +420,14 @@ function ImportContent() {
                                 background: "rgba(255,68,68,0.08)", border: "1px solid rgba(255,68,68,0.3)",
                                 borderRadius: 8, fontSize: 13, color: "#FF6B6B",
                             }}>
-                                ⚠️ {csvError}
+                                <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
+                                    <span className="inline-icon" aria-hidden="true">
+                                        <svg viewBox="0 0 24 24">
+                                            <path d="M12 3 2 21h20L12 3Zm0 6v6m0 3h.01" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+                                        </svg>
+                                    </span>
+                                    {csvError}
+                                </span>
                             </div>
                         )}
                     </div>
@@ -407,7 +441,11 @@ function ImportContent() {
                     onClick={() => toggle("manual")}
                 >
                     <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                        <span style={{ fontSize: 24 }}>✏️</span>
+                        <span className="section-icon" aria-hidden="true">
+                            <svg viewBox="0 0 24 24">
+                                <path d="m4 20 4.5-1 9.5-9.5-3.5-3.5L5 15.5 4 20Zm9.5-14 3.5 3.5" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" />
+                            </svg>
+                        </span>
                         <div>
                             <h4 style={{ color: "var(--text-primary)", margin: 0 }}>Manual Entry</h4>
                             <SourceBadge count={manualAssets.length} label="coins" />
@@ -459,7 +497,7 @@ function ImportContent() {
                                             color: "#FF4444", cursor: "pointer", fontSize: 16,
                                         }}
                                     >
-                                        ✕
+                                        X
                                     </button>
                                 )}
                             </div>
@@ -491,7 +529,7 @@ function ImportContent() {
                         fontSize: 15,
                     }}
                 >
-                    🧠 Analyze Total Portfolio →
+                    Analyze Total Portfolio →
                 </button>
             </div>
             {submitError && (

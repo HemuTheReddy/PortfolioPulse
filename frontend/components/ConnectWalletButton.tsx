@@ -34,7 +34,14 @@ export function ConnectWalletButton({ onConnected, onDisconnected }: Props) {
                         color: "var(--accent)",
                     }}
                 >
-                    🦊 {short}
+                    <span className="wallet-label">
+                        <span className="inline-icon" aria-hidden="true">
+                            <svg viewBox="0 0 24 24">
+                                <path d="M4 7h16v10H4zM7 7V5h10v2M8 12h8" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" />
+                            </svg>
+                        </span>
+                        {short}
+                    </span>
                 </span>
                 <button
                     type="button"
@@ -64,7 +71,14 @@ export function ConnectWalletButton({ onConnected, onDisconnected }: Props) {
                 open();
             }}
         >
-            🦊 Connect Wallet
+            <span className="wallet-label">
+                <span className="inline-icon" aria-hidden="true">
+                    <svg viewBox="0 0 24 24">
+                        <path d="M4 7h16v10H4zM7 7V5h10v2M8 12h8" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" />
+                    </svg>
+                </span>
+                Connect Wallet
+            </span>
         </button>
     );
 }
