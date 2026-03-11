@@ -14,13 +14,7 @@
 
 ## Preview
 
-> Visit `/results?demo=true` with the backend running to see sample recommendations instantly — no wallet or quiz required.
-
-**Flows:**
-- **Quiz** → Answer 6 risk-profile questions → get personalized allocations
-- **Import** → Connect wallet (Mobula), upload CSV, or enter holdings manually → same pipeline
-
-**Output:** Ranked token allocations with weights, confidence scores, explanations, an interactive donut chart, and CSV export.
+![Unavailable](assets/cryptodemo.png)
 
 ---
 
