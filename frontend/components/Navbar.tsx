@@ -2,15 +2,21 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { getMarketState, type MarketData } from "@/lib/api";
+import { getMarketState, type MarketData, getApiErrorMessage } from "@/lib/api";
 
 export function Navbar() {
     const [market, setMarket] = useState<MarketData | null>(null);
+    const [marketError, setMarketError] = useState("");
 
     useEffect(() => {
         getMarketState()
-            .then(setMarket)
-            .catch(() => { });
+            .then((data) => {
+                setMarket(data);
+                setMarketError("");
+            })
+            .catch((err: unknown) => {
+                setMarketError(getApiErrorMessage(err));
+            });
     }, []);
 
     const stateColor = market
@@ -32,6 +38,12 @@ export function Navbar() {
                     <span className="dot" style={{ background: stateColor }} />
                     {market.emoji} {market.market_state.toUpperCase()} ·
                     F&G: {market.market_metrics.fear_greed}
+                </div>
+            )}
+            {!market && marketError && (
+                <div className="market-badge" title={marketError}>
+                    <span className="dot" style={{ background: "#FF6B6B" }} />
+                    Market unavailable
                 </div>
             )}
         </nav>

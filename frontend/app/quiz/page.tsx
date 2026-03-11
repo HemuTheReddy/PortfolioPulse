@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { submitQuiz, getRecommendations, getMarketState } from "@/lib/api";
+import { submitQuiz, getRecommendations, getMarketState, getApiErrorMessage } from "@/lib/api";
 
 const QUESTIONS = [
     {
@@ -78,11 +78,13 @@ export default function QuizPage() {
     const [step, setStep] = useState(0);
     const [answers, setAnswers] = useState<Record<string, string>>({});
     const [loading, setLoading] = useState(false);
+    const [errorMessage, setErrorMessage] = useState("");
 
     const current = QUESTIONS[step];
     const progress = ((step + 1) / QUESTIONS.length) * 100;
 
     const selectAnswer = (answerKey: string) => {
+        if (errorMessage) setErrorMessage("");
         setAnswers((prev) => ({ ...prev, [current.key]: answerKey }));
     };
 
@@ -114,8 +116,8 @@ export default function QuizPage() {
             );
 
             router.push("/results");
-        } catch {
-            alert("Something went wrong. Please try again.");
+        } catch (err: unknown) {
+            setErrorMessage(getApiErrorMessage(err));
             setLoading(false);
         }
     };
@@ -169,6 +171,9 @@ export default function QuizPage() {
                     {step < QUESTIONS.length - 1 ? "Next →" : "Get Recommendations →"}
                 </button>
             </div>
+            {errorMessage && (
+                <p style={{ marginTop: 12, color: "#FF6B6B", fontSize: 13 }}>{errorMessage}</p>
+            )}
         </div>
     );
 }

@@ -31,14 +31,20 @@ from backend.coin_metadata import enrich_recommendations, get_coin_symbol
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
 
-ALLOWED_ORIGINS = [
+DEFAULT_ALLOWED_ORIGINS = [
     "http://localhost:3000",
     "http://127.0.0.1:3000",
 ]
 
-_amplify_domain = os.getenv("AMPLIFY_DOMAIN")
-if _amplify_domain:
-    ALLOWED_ORIGINS.append(f"https://{_amplify_domain}")
+_configured_origins = os.getenv("ALLOWED_ORIGINS", "")
+ALLOWED_ORIGINS = [origin.strip() for origin in _configured_origins.split(",") if origin.strip()]
+
+if not ALLOWED_ORIGINS:
+    ALLOWED_ORIGINS = [*DEFAULT_ALLOWED_ORIGINS]
+    _amplify_domain = os.getenv("AMPLIFY_DOMAIN", "").strip()
+    if _amplify_domain:
+        sanitized_domain = _amplify_domain.replace("https://", "").replace("http://", "").strip("/")
+        ALLOWED_ORIGINS.append(f"https://{sanitized_domain}")
 
 
 def _cors_headers(origin: str | None = None) -> dict:
@@ -62,6 +68,26 @@ def _response(status: int, body: dict, origin: str | None = None) -> dict:
         },
         "body": json.dumps(body, default=str),
     }
+
+
+def _normalize_path(event: dict) -> str:
+    """Normalize REST/HTTP API paths to the expected /api/... route shape."""
+    path = event.get("path") or event.get("rawPath", "")
+    stage = event.get("requestContext", {}).get("stage")
+    if stage and path.startswith(f"/{stage}/"):
+        return path[len(stage) + 1 :]
+    if path.count("/") > 2 and not path.startswith("/api"):
+        return "/" + "/".join(path.split("/")[2:])
+    return path
+
+
+def _error_payload(code: str, message: str, request_id: str | None = None, **extra):
+    payload = {"error": message, "code": code}
+    if request_id:
+        payload["request_id"] = request_id
+    if extra:
+        payload.update(extra)
+    return payload
 
 
 # ─── Route Handlers ──────────────────────────────────────────────────
@@ -182,7 +208,11 @@ def handler(event, context):
     Lambda entry point. Expects API Gateway proxy integration events.
     Supports both REST API and HTTP API (v1 / v2 payload formats).
     """
-    logger.info("Event: %s", json.dumps(event, default=str)[:2000])
+    request_id = (
+        event.get("requestContext", {}).get("requestId")
+        or getattr(context, "aws_request_id", None)
+    )
+    logger.info("Event (%s): %s", request_id, json.dumps(event, default=str)[:2000])
 
     origin = (event.get("headers") or {}).get("origin") or (
         (event.get("headers") or {}).get("Origin")
@@ -196,10 +226,7 @@ def handler(event, context):
         return _response(200, {}, origin)
 
     # Extract path — support both v1 and v2 payload formats
-    path = event.get("path") or event.get("rawPath", "")
-    # Strip stage prefix (e.g. /prod/api/health → /api/health)
-    if path.count("/") > 2 and not path.startswith("/api"):
-        path = "/" + "/".join(path.split("/")[2:])
+    path = _normalize_path(event)
 
     body = {}
     raw_body = event.get("body")
@@ -207,21 +234,43 @@ def handler(event, context):
         try:
             body = json.loads(raw_body) if isinstance(raw_body, str) else raw_body
         except (json.JSONDecodeError, TypeError):
-            return _response(400, {"error": "Invalid JSON body"}, origin)
+            return _response(
+                400,
+                _error_payload("INVALID_JSON", "Invalid JSON body", request_id),
+                origin,
+            )
 
     route_key = (http_method.upper(), path)
     route_fn = ROUTES.get(route_key)
 
     if route_fn is None:
-        logger.warning("No route for %s %s", http_method, path)
-        return _response(404, {"error": f"Not found: {http_method} {path}"}, origin)
+        logger.warning("No route (%s) for %s %s", request_id, http_method, path)
+        return _response(
+            404,
+            _error_payload(
+                "ROUTE_NOT_FOUND",
+                f"Not found: {http_method} {path}",
+                request_id,
+                method=http_method,
+                path=path,
+            ),
+            origin,
+        )
 
     try:
         result = route_fn(body)
         return _response(200, result, origin)
     except ValueError as e:
-        logger.warning("Validation error: %s", e)
-        return _response(400, {"error": str(e)}, origin)
+        logger.warning("Validation error (%s): %s", request_id, e)
+        return _response(
+            400,
+            _error_payload("VALIDATION_ERROR", str(e), request_id),
+            origin,
+        )
     except Exception as e:
-        logger.error("Unhandled error: %s\n%s", e, traceback.format_exc())
-        return _response(500, {"error": "Internal server error"}, origin)
+        logger.error("Unhandled error (%s): %s\n%s", request_id, e, traceback.format_exc())
+        return _response(
+            500,
+            _error_payload("INTERNAL_ERROR", "Internal server error", request_id),
+            origin,
+        )

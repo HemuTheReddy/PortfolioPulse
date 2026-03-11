@@ -285,8 +285,9 @@ docker push YOUR_ACCOUNT_ID.dkr.ecr.us-east-1.amazonaws.com/portfoliopulse-lambd
 |-----|-------|
 | `SAGEMAKER_ENDPOINT` | `portfoliopulse-neumf` |
 | `DYNAMO_TABLE` | `MarketState` |
-| `AWS_REGION` | `us-east-1` |
-| `AMPLIFY_DOMAIN` | *(set after Phase 5 — your Amplify URL)* |
+| `AWS_REGION` | `us-east-2` |
+| `ALLOWED_ORIGINS` | *(recommended)* `http://localhost:3000,http://127.0.0.1:3000,https://main.d1abc2def3.amplifyapp.com` |
+| `AMPLIFY_DOMAIN` | *(optional fallback if `ALLOWED_ORIGINS` is not set)* |
 
 #### Step 3.7: Test payloads
 
@@ -540,8 +541,9 @@ Before clicking **Save and deploy**, expand **Advanced settings** → **Environm
    - Deploy the built Next.js app
 3. Wait for the build to complete (~3–5 minutes)
 4. Check the build logs if anything fails — common issues:
-   - **Node version**: If it fails on `nvm use 18`, try setting the Node version in Amplify Console → App settings → Build settings → Build image settings → Live package updates → Add `Node.js` version `18`
+  - **Node version**: If it fails on `nvm use 20`, set Node version `20` in Amplify Console → App settings → Build settings → Build image settings → Live package updates
    - **Missing env vars**: The build log will show `NEXT_PUBLIC_API_URL=` (empty) if not set — go back and add it
+  - **Trailing slash in API URL**: `NEXT_PUBLIC_API_URL` must not end with `/` (Amplify pre-build checks now fail early when this is misconfigured)
 
 #### Step 5.5: Copy the Amplify domain + update Lambda
 
@@ -550,20 +552,23 @@ After successful deployment:
 1. Go to your app in Amplify Console → **Domain management**
 2. Copy the domain, e.g. `main.d1abc2def3.amplifyapp.com`
 3. Go to **Lambda Console** → `PortfolioPulse-API` → **Configuration** → **Environment variables**
-4. Add/update: `AMPLIFY_DOMAIN` = `main.d1abc2def3.amplifyapp.com`
+4. Add/update:
+   - `ALLOWED_ORIGINS` = `http://localhost:3000,http://127.0.0.1:3000,https://main.d1abc2def3.amplifyapp.com`
+   - (Optional fallback) `AMPLIFY_DOMAIN` = `main.d1abc2def3.amplifyapp.com`
 
-This allows the Lambda CORS handler to accept requests from your Amplify domain.
+This allows the Lambda CORS handler to accept requests from your Amplify and local dev origins.
 
 #### Step 5.6: Verify CORS works end-to-end
 
-After updating the Lambda env var, test that the frontend can talk to the API:
+After updating Lambda CORS env vars, test that the frontend can talk to the API:
 
 1. Open your Amplify URL in a browser: `https://main.d1abc2def3.amplifyapp.com`
 2. Open browser DevTools → **Network** tab
 3. Navigate to the Quiz page and submit — watch for:
    - `POST /api/quiz` → should return `200`
    - If you see CORS errors, check:
-     - The `AMPLIFY_DOMAIN` env var in Lambda matches your actual domain exactly
+    - `ALLOWED_ORIGINS` contains your exact frontend origin (protocol + host, no path)
+    - If using fallback mode, `AMPLIFY_DOMAIN` matches your actual domain exactly
      - The API Gateway is deployed (re-deploy if you made changes)
 
 #### Step 5.7: Test all flows

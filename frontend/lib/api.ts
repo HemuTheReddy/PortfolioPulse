@@ -1,13 +1,69 @@
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+const API_BASE = (process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000").replace(/\/+$/, "");
+
+const REQUEST_TIMEOUT_MS = 15000;
+
+interface ApiErrorDetails {
+    kind: "network" | "http" | "parse";
+    message: string;
+    path: string;
+    url: string;
+    status?: number;
+    statusText?: string;
+    responseBody?: string;
+}
+
+export class ApiError extends Error {
+    kind: ApiErrorDetails["kind"];
+    path: string;
+    url: string;
+    status?: number;
+    statusText?: string;
+    responseBody?: string;
+
+    constructor(details: ApiErrorDetails) {
+        super(details.message);
+        this.name = "ApiError";
+        this.kind = details.kind;
+        this.path = details.path;
+        this.url = details.url;
+        this.status = details.status;
+        this.statusText = details.statusText;
+        this.responseBody = details.responseBody;
+    }
+}
+
+export function getApiErrorMessage(err: unknown): string {
+    if (err instanceof ApiError) {
+        if (err.kind === "network") {
+            return "Unable to reach the API. Check NEXT_PUBLIC_API_URL, CORS allowlist, and network.";
+        }
+        if (err.kind === "http") {
+            const bodyNote = err.responseBody ? ` Details: ${err.responseBody.slice(0, 160)}` : "";
+            return `API error ${err.status}: ${err.statusText || "request failed"}.${bodyNote}`;
+        }
+        return "The API returned an invalid response format.";
+    }
+    if (err instanceof Error) return err.message;
+    return "Unexpected error.";
+}
 
 async function requestJson<T>(path: string, init?: RequestInit): Promise<T> {
     const url = `${API_BASE}${path}`;
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
     let res: Response;
     try {
-        res = await fetch(url, init);
+        res = await fetch(url, { ...init, signal: controller.signal });
     } catch (err) {
         const msg = err instanceof Error ? err.message : "unknown network error";
-        throw new Error(`Network request failed for ${path} (${url}): ${msg}`);
+        throw new ApiError({
+            kind: "network",
+            message: `Network request failed for ${path} (${url}): ${msg}`,
+            path,
+            url,
+        });
+    } finally {
+        clearTimeout(timeout);
     }
 
     if (!res.ok) {
@@ -17,14 +73,26 @@ async function requestJson<T>(path: string, init?: RequestInit): Promise<T> {
         } catch {
             body = "";
         }
-        const detail = body ? ` — ${body.slice(0, 180)}` : "";
-        throw new Error(`API request failed for ${path}: ${res.status} ${res.statusText}${detail}`);
+        throw new ApiError({
+            kind: "http",
+            message: `API request failed for ${path}: ${res.status} ${res.statusText}`,
+            path,
+            url,
+            status: res.status,
+            statusText: res.statusText,
+            responseBody: body,
+        });
     }
 
     try {
         return (await res.json()) as T;
     } catch {
-        throw new Error(`API request for ${path} returned invalid JSON.`);
+        throw new ApiError({
+            kind: "parse",
+            message: `API request for ${path} returned invalid JSON.`,
+            path,
+            url,
+        });
     }
 }
 

@@ -4,7 +4,7 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import dynamic from "next/dynamic";
 import { useRouter } from "next/navigation";
 import { Suspense } from "react";
-import { importPortfolio } from "@/lib/api";
+import { importPortfolio, getApiErrorMessage } from "@/lib/api";
 import type { UnifiedAsset } from "@/lib/DataIngestion/types";
 import { mergePortfolios } from "@/lib/DataIngestion/merge";
 import { parseExchangeCSV } from "@/lib/DataIngestion/csvParser";
@@ -142,6 +142,7 @@ function ImportContent() {
     const [walletScanning, setWalletScanning] = useState(false);
     const [csvError, setCsvError] = useState("");
     const [walletError, setWalletError] = useState("");
+    const [submitError, setSubmitError] = useState("");
     const fileInputRef = useRef<HTMLInputElement>(null);
 
     // ── Manual entry state ──────────────────────────────────────────
@@ -215,6 +216,7 @@ function ImportContent() {
         if (!hasAnyAsset) return;
         setLoading(true);
         setLoadingMsg("Analyzing your portfolio & generating recommendations…");
+        setSubmitError("");
 
         try {
             const result = await importPortfolio(
@@ -240,11 +242,7 @@ function ImportContent() {
             );
             router.push("/results");
         } catch (err: unknown) {
-            const errorText = err instanceof Error ? err.message : "";
-            const msg = errorText.includes("Failed to fetch") || errorText.includes("Network request failed")
-                ? "Backend unavailable. Make sure the API server is running (e.g. uvicorn on port 8000)."
-                : "Something went wrong. Please try again.";
-            alert(msg);
+            setSubmitError(getApiErrorMessage(err));
             setLoading(false);
         }
     };
@@ -496,6 +494,21 @@ function ImportContent() {
                     🧠 Analyze Total Portfolio →
                 </button>
             </div>
+            {submitError && (
+                <div
+                    style={{
+                        marginTop: 10,
+                        padding: "10px 12px",
+                        border: "1px solid rgba(255,68,68,0.3)",
+                        borderRadius: 8,
+                        background: "rgba(255,68,68,0.08)",
+                        color: "#FF6B6B",
+                        fontSize: 13,
+                    }}
+                >
+                    {submitError}
+                </div>
+            )}
 
             <div style={{ marginTop: 16 }}>
                 <button className="btn btn-secondary" onClick={() => router.push("/")}>
