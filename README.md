@@ -61,7 +61,7 @@ The system doesn't predict prices. It surfaces what investors with a documented 
 | TensorFlow / Keras | NeuMF model — training and local inference |
 | PyPortfolioOpt | Mean-variance optimization, Efficient Frontier |
 | Boto3 | AWS integration — DynamoDB, SageMaker, S3 |
-| Web3.py | Direct ERC-20 on-chain metadata via public RPC |
+| Requests | CoinGecko API for token metadata and prices |
 | Pandas / NumPy | Data processing, feature engineering |
 
 ### AWS (Production)
@@ -114,6 +114,8 @@ User → Next.js (Amplify)
 ---
 
 ## Data Pipeline
+
+> **Note:** The BigQuery ETL pipeline that produced the training data is not part of this repository. `CryptoInteractions.csv` and `qualified_wallets.csv` are pre-generated and consumed by the backend at runtime. The pipeline is documented here for transparency; the SQL and tooling live in a separate project.
 
 ### Source
 The Ethereum blockchain via Google BigQuery's free public dataset — 136GB+ of token transfer history, processed in ~30 seconds at $0.68 using automatic parallelization across ~433 concurrent workers.
@@ -233,10 +235,10 @@ Since normalization applies equally to both sends and receives, the `pnl_ratio` 
 
 ---
 
-### 5. API Blocking — TLS Fingerprinting
-**Problem:** CoinGecko's REST API returned `ConnectionResetError: [WinError 10054]` — the server accepted the connection then immediately closed it at the TLS handshake level, before any request was sent. Identified as TLS fingerprinting detecting Python's SSL stack as automated traffic. Adding a browser `User-Agent` header did not resolve it.
+### 5. Coin Metadata Reliability — Handling CoinGecko Gaps
+**Problem:** The NeuMF model represents tokens as integer `item_idx` values. Making recommendations interpretable requires mapping these back to real coin names, symbols, prices, and logos via CoinGecko. CoinGecko's free tier has rate limits and occasionally returns missing or incomplete data for less-liquid tokens — gaps that would silently degrade the quality of the recommendation output.
 
-**Fix:** Pivoted to Web3.py for token metadata — direct ERC-20 `name()` and `symbol()` RPC calls against free public Ethereum nodes. No API key, no rate limits, cannot be fingerprinted, reads directly from the canonical source of truth. This eliminated the third-party API dependency entirely for the metadata pipeline.
+**Fix:** `coin_metadata.py` wraps CoinGecko calls with TTL caching (`cachetools`) to minimize redundant requests and respect rate limits. The `coin_manifest.json` file pre-maps `item_idx` to CoinGecko IDs at build time, so the live request path only needs to fetch prices and 24h change — not resolve identities on every call. Tokens that fail enrichment are filtered from the response rather than returned with null fields, keeping the output clean regardless of upstream availability.
 
 ---
 
@@ -335,7 +337,7 @@ PortfolioPulse/
 
 **Cloud-native debugging requires different intuitions.** Several failures — BIGNUMERIC overflow, nested window functions, RAND() evaluated twice — only occur at scale or in specific SQL engines. The fix for each was not debugging code but understanding what the infrastructure actually does.
 
-**Pivoting dependencies early matters.** The TLS fingerprinting issue with CoinGecko could have been patched indefinitely with headers and delays. Treating it as signal to eliminate the dependency entirely made the metadata pipeline more reliable and architecturally cleaner.
+**Caching is load-bearing infrastructure, not an optimization.** With an external API like CoinGecko as the metadata source, TTL caching isn't a nice-to-have — it's what keeps rate limits from becoming a production incident. Building the `coin_manifest.json` pre-mapping at build time rather than resolving identities live was the key architectural decision that made the metadata pipeline robust.
 
 ---
 
