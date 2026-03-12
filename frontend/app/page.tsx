@@ -23,12 +23,12 @@ export default function Home() {
               Take the Risk Quiz →
             </Link>
           </div>
-          <div className="hero-prompt-card hero-prompt-import">
-            <p className="hero-prompt-title">Have existing coins?</p>
-            <p className="hero-prompt-subtitle">
+          <div className="hero-prompt-card hero-prompt-import" style={{ alignItems: 'flex-start', textAlign: 'left' }}>
+            <p className="hero-prompt-title" style={{ textAlign: 'left' }}>Have existing coins?</p>
+            <p className="hero-prompt-subtitle" style={{ textAlign: 'left' }}>
               Import your holdings to tailor recommendations around your current portfolio.
             </p>
-            <Link href="/import" prefetch={false} className="btn btn-secondary">
+            <Link href="/import" prefetch={false} className="btn btn-secondary" style={{ alignSelf: 'flex-start' }}>
               Import My Portfolio →
             </Link>
           </div>

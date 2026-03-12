@@ -17,9 +17,14 @@
   --radius-sm: 8px;
 }
 
-* { margin: 0; padding: 0; box-sizing: border-box; }
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
 
-html, body {
+html,
+body {
   font-family: 'Inter', -apple-system, sans-serif;
   background: var(--bg-primary);
   color: var(--text-primary);
@@ -28,10 +33,22 @@ html, body {
 }
 
 /* ─── Scrollbar ─────────────────────────────────────────────────── */
-::-webkit-scrollbar { width: 6px; }
-::-webkit-scrollbar-track { background: var(--bg-primary); }
-::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
-::-webkit-scrollbar-thumb:hover { background: var(--accent-dark); }
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--bg-primary);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--accent-dark);
+}
 
 /* ─── Navbar ────────────────────────────────────────────────────── */
 .navbar-shell {
@@ -66,7 +83,9 @@ html, body {
   line-height: 1;
 }
 
-.navbar-logo .accent { color: var(--accent); }
+.navbar-logo .accent {
+  color: var(--accent);
+}
 
 .navbar-right {
   display: flex;
@@ -138,8 +157,15 @@ html, body {
 }
 
 @keyframes pulse {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.4; }
+
+  0%,
+  100% {
+    opacity: 1;
+  }
+
+  50% {
+    opacity: 0.4;
+  }
 }
 
 /* ─── Hero ──────────────────────────────────────────────────────── */
@@ -188,6 +214,8 @@ html, body {
   padding: 20px;
   display: flex;
   flex-direction: column;
+  align-items: flex-start;
+  text-align: left;
   min-height: 260px;
 }
 
@@ -197,6 +225,12 @@ html, body {
 
 .hero-prompt-import {
   border-left-color: #5fdb9f;
+  text-align: left !important;
+  align-items: flex-start !important;
+}
+
+.hero-prompt-import .btn {
+  align-self: flex-start !important;
 }
 
 .hero-prompt-title {
@@ -204,6 +238,7 @@ html, body {
   font-weight: 700;
   margin: 0 0 6px;
   color: var(--text-primary);
+  text-align: center;
 }
 
 .hero-prompt-subtitle {
@@ -211,6 +246,7 @@ html, body {
   margin: 0 0 14px;
   color: var(--text-secondary);
   line-height: 1.5;
+  text-align: left;
 }
 
 .hero-prompt-card .btn {
@@ -239,6 +275,7 @@ html, body {
   background: var(--accent);
   color: #0A0A0A;
 }
+
 .btn-primary:hover {
   background: var(--accent-mid);
   transform: translateY(-2px);
@@ -250,6 +287,7 @@ html, body {
   color: var(--text-primary);
   border: 1px solid var(--border);
 }
+
 .btn-secondary:hover {
   border-color: var(--accent);
   color: var(--accent);
@@ -699,7 +737,9 @@ html, body {
 }
 
 @keyframes spin {
-  to { transform: rotate(360deg); }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .loading p {
@@ -762,19 +802,55 @@ html, body {
 
 /* ─── Responsive ────────────────────────────────────────────────── */
 @media (max-width: 768px) {
-  .hero h1 { font-size: 36px; }
-  .hero-prompts { grid-template-columns: 1fr; }
-  .stats-row { grid-template-columns: 1fr 1fr; }
-  .results-grid { grid-template-columns: 1fr; }
-  .quiz-options { grid-template-columns: 1fr; }
-  .explain-grid { grid-template-columns: 1fr; }
-  .signal-legend { flex-wrap: wrap; justify-content: flex-start; }
-  .navbar { padding: 12px 16px; }
-  .navbar-right { gap: 8px; }
-  .market-badge { font-size: 12px; padding: 6px 10px; }
-  .navbar-disclaimer { padding: 8px 16px 10px; }
+  .hero h1 {
+    font-size: 36px;
+  }
+
+  .hero-prompts {
+    grid-template-columns: 1fr;
+  }
+
+  .stats-row {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .results-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .quiz-options {
+    grid-template-columns: 1fr;
+  }
+
+  .explain-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .signal-legend {
+    flex-wrap: wrap;
+    justify-content: flex-start;
+  }
+
+  .navbar {
+    padding: 12px 16px;
+  }
+
+  .navbar-right {
+    gap: 8px;
+  }
+
+  .market-badge {
+    font-size: 12px;
+    padding: 6px 10px;
+  }
+
+  .navbar-disclaimer {
+    padding: 8px 16px 10px;
+  }
 }
 
 @media (max-width: 1080px) {
-  .results-grid { grid-template-columns: 1fr; }
+  .results-grid {
+    grid-template-columns: 1fr;
+  }
 }
